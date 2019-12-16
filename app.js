@@ -1,5 +1,4 @@
-import Http from './lib.js';
-const baseUrl = 'https://more-posts-9.herokuapp.com';
+const baseUrl = 'https://frontend9.herokuapp.com';
 
 let lastSeenId = 0;
 
@@ -39,13 +38,6 @@ typeEl.addEventListener('input', (evt) => {
 addFormEl.addEventListener('submit', (evt) => {
     evt.preventDefault();
 
-    // const value = postInputEl;
-
-    // const postEl = document.createElement('li');
-    // postEl.textContent = value;
-    // postEl.classList.add('sending');
-    // postEl.appendChild(postEl);
-
     const data = {
             content: contentEl.value,
             type: typeEl.value,
@@ -62,19 +54,10 @@ addFormEl.addEventListener('submit', (evt) => {
             throw new Error(response.statusText);
         }
         return response.json();
-        // postsEl.removeChild(postEl);
     }).catch(error => {
         console.log(error);
     });
 
-    // postInputEl.value = '';
-
-    
-//     http.postRequest('/posts', (evt) => {
-//         loadData();
-//         contentEl.value = '';
-//         localStorage.removeItem('link');
-//     }, handleError, JSON.stringify(data), [{name: 'Content-Type', value: 'application/json'}]);
 });
 
 const postsEl = document.createElement('div');
@@ -124,7 +107,6 @@ setInterval(() => {
         }
         return response.json(); 
     }).then(data => {
-        console.log(data);
         if (data.length !== 0) {
             lastSeenId = data[data.length - 1].id;
             renderPosts(data);
@@ -257,10 +239,3 @@ const rebuildList = (evt) => {
         };
     }
 };
-// const handleError = (evt) => {
-//     console.log(evt);
-// };
-// const loadData = () => {
-//     http.getRequest('/posts', rebuildList, handleError);
-// };
-// loadData();
