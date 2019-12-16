@@ -1,6 +1,7 @@
 import Http from './lib.js';
-const http = new Http('https://more-posts-9.herokuapp.com');
+const baseUrl = 'https://more-posts-9.herokuapp.com';
 
+let lastSeenId = 0;
 
 const rootEl = document.getElementById('root');
 const addFormEl = document.createElement('form');
@@ -19,67 +20,92 @@ addFormEl.innerHTML = `
 `;
 
 rootEl.appendChild(addFormEl);
+
 const contentEl = addFormEl.querySelector('[data-id=content]');
 contentEl.value = localStorage.getItem('content');
 contentEl.addEventListener('input', (evt) => {
-    localStorage.setItem('content', evt.currentTarget.value);
+    localStorage.setItem('content', contentEl.value);
 });
 
 
 const typeEl = addFormEl.querySelector('[data-id=type]');
 typeEl.value = localStorage.getItem('type');
 typeEl.addEventListener('input', (evt) => {
-    localStorage.setItem('type', evt.content.value);
+    localStorage.setItem('type', typeEl.value);
 });
 
-// const postEl = rootEl.querySelector('[data-id=post]');
-// const postFormEl = rootEl.querySelector('[data-id=post-form]');
-// const postInputEl = postFormEl.querySelector('[data-id=post-text]');
 
-let lastSeenId = 0;
 
 addFormEl.addEventListener('submit', (evt) => {
     evt.preventDefault();
 
-    const value = postInputEl;
+    // const value = postInputEl;
 
-    const postEl = document.createElement('li');
-    postEl.textContent = value;
-    postEl.classList.add('sending');
-    postEl.appendChild(postEl);
+    // const postEl = document.createElement('li');
+    // postEl.textContent = value;
+    // postEl.classList.add('sending');
+    // postEl.appendChild(postEl);
+
+    const data = {
+            content: contentEl.value,
+            type: typeEl.value,
+        };
 
     fetch(`${baseUrl}/posts`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            id: 0,
-            content: value,
-        }),
+        body: JSON.stringify(data),
     }).then(response => {
         if (!response.ok) {
             throw new Error(response.statusText);
         }
-
-        postsEl.removeChild(postEl);
+        return response.json();
+        // postsEl.removeChild(postEl);
     }).catch(error => {
-        // TODO: повторная отправка
-    })
-    ;
+        console.log(error);
+    });
 
-    postInputEl.value = '';
+    // postInputEl.value = '';
 
-    const data = {
-        content: contentEl.value,
-        type: typeEl.value,
-    };
-    http.postRequest('/posts', (evt) => {
-        loadData();
-        contentEl.value = '';
-        localStorage.removeItem('link');
-    }, handleError, JSON.stringify(data), [{name: 'Content-Type', value: 'application/json'}]);
+    
+//     http.postRequest('/posts', (evt) => {
+//         loadData();
+//         contentEl.value = '';
+//         localStorage.removeItem('link');
+//     }, handleError, JSON.stringify(data), [{name: 'Content-Type', value: 'application/json'}]);
 });
+
+const postsEl = document.createElement('div');
+rootEl.appendChild(postsEl);
+
+const lastPosts = document.createElement('button');
+lastPosts.textContent = 'Загрузить еще';
+lastPosts.className = 'card mb-2';
+lastPosts.addEventListener('click', () => {
+    lastPost()
+});
+rootEl.appendChild(lastPosts);
+
+function lastPost() {
+    fetch(`${baseUrl}/posts/${lastSeenId}`)
+        .then(
+            response => {
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+                return response.json();
+            }
+        ).then(
+            data => {
+                console.log(data);
+                renderPosts(data);
+            }
+        ).catch(error => {
+            console.log(error);
+        });
+}
 
 function renderPosts(posts) {
     for (const post of posts) {
@@ -91,7 +117,7 @@ function renderPosts(posts) {
 
 setInterval(() => {
 
-    const promise = fetch(`${baseUrl}/posts/${lastSeendId}`);
+    const promise = fetch(`${baseUrl}/posts/${lastSeenId}`);
     promise.then(response => {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -100,14 +126,14 @@ setInterval(() => {
     }).then(data => {
         console.log(data);
         if (data.length !== 0) {
-            lastSeendId = data[data.length - 1].id;
+            lastSeenId = data[data.length - 1].id;
             renderPosts(data);
         }
     }).catch(error => {
         console.log(error);
     });
 
-  }, 500); 
+  }, 5000); 
 
 
 const listEl = document.createElement('div');
@@ -175,23 +201,66 @@ const rebuildList = (evt) => {
                     </div>
                 `;
             
-        postEl.querySelector('[data-action=like]').addEventListener('click', () => {
-            http.postRequest(`/posts/${item.id}/likes`, loadData, handleError);
-        });
-        postEl.querySelector('[data-action=dislike]').addEventListener('click', () => {
-            http.deleteRequest(`/posts/${item.id}/likes`, loadData, handleError);
-        });
-        postEl.querySelector('[data-action=remove]').addEventListener('click', () => {
-            http.deleteRequest(`/posts/${item.id}`, loadData, handleError);
-        });
-        listEl.appendChild(postEl);
-    };
-        }
+            postEl.querySelector('[data-action=like]').addEventListener('click', () => {
+                fetch(`${baseUrl}/posts/${item.id}/likes`, {
+                    method: 'POST'
+                }).then(
+                    response => {
+                        if (!response.ok) {
+                            throw new Error(response.statusText);
+                        }
+                        return response.json();
+                    },
+                ).then(
+                    data => {
+                        postsEl.querySelector('[data-action=like]').textContent=`like ${data}`;
+                    }               
+                ).catch(error => {
+                    console.log(error);
+                })
+            });
+
+            postEl.querySelector('[data-action=dislike]').addEventListener('click', () => {
+                fetch(`${baseUrl}/posts/${item.id}/likes`, {
+                    method: 'DELETE'
+                }).then(
+                    response => {
+                        if (!response.ok) {
+                            throw new Error(response.statusText);
+                        }
+                        return response.json();
+                    },
+                ).then(
+                    data => {
+                        postsEl.querySelector('[data-action=like]').textContent=`dislike ${data}`;
+                    }               
+                ).catch(error => {
+                    console.log(error);
+                })
+            });
+            postEl.querySelector('[data-action=remove]').addEventListener('click', () => {
+                fetch(`${baseUrl}/posts/${item.id}`, {
+                    method: 'DELETE'
+                }).then(
+                    response => {
+                        if (!response.ok) {
+                            throw new Error(response.statusText);
+                        }
+                        return response.json();
+                    },              
+                ).catch(error => {
+                    console.log(error);
+                })
+                postsEl.removeChild(postEl);
+            });
+            listEl.appendChild(postEl);
+        };
+    }
 };
-const handleError = (evt) => {
-    console.log(evt);
-};
-const loadData = () => {
-    http.getRequest('/posts', rebuildList, handleError);
-};
-loadData();
+// const handleError = (evt) => {
+//     console.log(evt);
+// };
+// const loadData = () => {
+//     http.getRequest('/posts', rebuildList, handleError);
+// };
+// loadData();
