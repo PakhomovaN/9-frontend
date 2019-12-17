@@ -1,4 +1,4 @@
-const baseUrl = 'https://frontend9.herokuapp.com';
+const baseUrl = 'https://more-posts-9.herokuapp.com';
 
 let lastSeenId = 0;
 
