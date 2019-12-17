@@ -39,6 +39,7 @@ addFormEl.addEventListener('submit', (evt) => {
     evt.preventDefault();
 
     const data = {
+            id: 0,
             content: contentEl.value,
             type: typeEl.value,
         };
