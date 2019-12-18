@@ -72,7 +72,7 @@ const lastPostsBtn = document.createElement('button');
 lastPostsBtn.textContent = 'Загрузить еще';
 lastPostsBtn.className = 'card mb-2';
 lastPostsBtn.addEventListener('click', () => {
-    lastPostsBtn()
+    lastPostsBtn();
 });
 rootEl.appendChild(lastPostsBtn);
 
@@ -94,13 +94,14 @@ function addlastPosts() {
 }
 
 function renderPosts(data) {
+    data.reverse();
     if (data.length < 5) {
         lastPostsBtn.style.display = 'none';
         if (data.length === 0) {
             return;
         }
     } else {
-        fetch(`${baseUrl}/posts/lastPosts/:lastSeenId/${data[data.length - 1].id}`)
+        fetch(`${baseUrl}/posts/loadPosts/${data[data.length - 1].id}`)
         .then(
             response => {
                 if (!response.ok) {
@@ -118,9 +119,7 @@ function renderPosts(data) {
         ).catch(error => {
             console.log(error);
         })
-    }
-    lastSeenId = data[data.length - 1].id;
-
+    } 
     for (const item of data) {
         postsEl.appendChild(rebuildList(item));
     }
@@ -129,10 +128,9 @@ function renderPosts(data) {
 const listEl = document.createElement('div');
 rootEl.appendChild(listEl);
 
-function rebuildList(item) {
-    listEl.innerHTML = '';
 
-    for (const item of items) {
+function rebuildList(item) {
+
         const postEl = document.createElement('div');
         postEl.className = 'card mb-2';
         if (item.type === 'regular') {
@@ -240,22 +238,5 @@ function rebuildList(item) {
             });
             listEl.appendChild(postEl);
         };
-    }
 };
-// setInterval(() => {
 
-//     fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
-//         .then(response => {
-//         if (!response.ok) {
-//             throw new Error(response.statusText);
-//         }
-//         return response.json(); 
-//     }).then(data => {
-//         if (data === 'false') {
-//             return;
-//         }
-//     }).catch(error => {
-//         console.log(error);
-//     });
-
-//   }, 5000);
