@@ -1,11 +1,14 @@
 const baseUrl = 'https://more-posts-9.herokuapp.com';
 
 let lastSeenId = 0;
+let firstSeenId = 0;
+let lastPosts = [];
 
 const rootEl = document.getElementById('root');
 const addFormEl = document.createElement('form');
 addFormEl.className = 'form-inline mb-2';
 addFormEl.innerHTML = `
+<form>
     <div class="form-group">
         <input class="form-control" data-id="content">
     </div>
@@ -16,40 +19,56 @@ addFormEl.innerHTML = `
         <option value="video">Видео</option>
     </select>  
     <button class="btn btn-primary">Ok</button>
+</form> 
 `;
-
 rootEl.appendChild(addFormEl);
 
+const newPostBtn = document.createElement('button');
+newPostBtn.textContent = 'Новые записи';
+newPostBtn.className = 'card mb-2';
+newPostBtn.style.display = "none";
+newPostBtn.addEventListener('click', () => {
+    fetch(`${baseUrl}/posts/${firstSeenId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+            return response.json();
+        }).then(function (data) {
+            firstSeenId = 0;
+            lastPosts.unshift(...data.reverse());
+            rebuildList(postsEl, lastPosts);
+            newPostBtn.style.display = "none";
+        }).catch(error => {
+            console.log(error);
+        });
+});
+rootEl.appendChild(newPostBtn);
+
 const contentEl = addFormEl.querySelector('[data-id=content]');
+const typeEl = addFormEl.querySelector('[data-id=type]');
 contentEl.value = localStorage.getItem('content');
 contentEl.addEventListener('input', (evt) => {
-    localStorage.setItem('content', contentEl.value);
+    localStorage.setItem('content', evt.currentTarget.value);
 });
-
-
-const typeEl = addFormEl.querySelector('[data-id=type]');
-typeEl.value = localStorage.getItem('type');
+if (localStorage.getItem('type') !== null) {
+    typeEl.value = localStorage.getItem('type');
+}
 typeEl.addEventListener('input', (evt) => {
-    localStorage.setItem('type', typeEl.value);
+    localStorage.setItem('type', evt.currentTarget.value);
 });
 
-
-
-addFormEl.addEventListener('submit', (evt) => {
+addFormEl.addEventListener('submit', function (evt) {
     evt.preventDefault();
-
-    const data = {
-            id: 0,
-            content: contentEl.value,
-            type: typeEl.value,
-        };
-
+    const post = {
+        id: 0,
+        content: contentEl.value,
+        type: typeEl.value,
+    };
     fetch(`${baseUrl}/posts`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(post)
     }).then(response => {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -59,78 +78,41 @@ addFormEl.addEventListener('submit', (evt) => {
         contentEl.value = '';
         typeEl.value = 'regular';
         localStorage.clear();
-        renderPosts(data);
+        lastPosts.unshift(data);
+        firstSeenId = data.id;
+        rebuildList(postsEl, lastPosts);
     }).catch(error => {
-        console.log(error);
-    });   
+        console.log(error)
+    });
 });
 
 const postsEl = document.createElement('div');
 rootEl.appendChild(postsEl);
 
-const lastPostsBtn = document.createElement('button');
-lastPostsBtn.textContent = 'Загрузить еще';
-lastPostsBtn.className = 'card mb-2';
-lastPostsBtn.addEventListener('click', () => {
-    lastPostsBtn();
-});
-rootEl.appendChild(lastPostsBtn);
-
-function addlastPosts() {
-    fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
-        .then(
-            response => {
-                if (!response.ok) {
-                    throw new Error(response.statusText);
-                }
-                return response.json();
-            }
-        ).then(data => {
-                renderPosts(data);
-            }
-        ).catch(error => {
-            console.log(error);
-        });
-}
-
-function renderPosts(data) {
-    data.reverse();
-    if (data.length < 5) {
-        lastPostsBtn.style.display = 'none';
-        if (data.length === 0) {
-            return;
-        }
-    } else {
-        fetch(`${baseUrl}/posts/loadPosts/${data[data.length - 1].id}`)
-        .then(
-            response => {
-                if (!response.ok) {
-                    throw new Error(response.statusText);
-                }
-                return response.text();
-            },
-        ).then (
-            data => {
-                console.log(data);
-                if (data === 'true') {
-                    lastPostsBtn.style.display = "block";
-                };
-            }
-        ).catch(error => {
-            console.log(error);
-        })
-    } 
-    for (const item of data) {
-        postsEl.appendChild(rebuildList(item));
+const renderPosts = fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
+renderPosts.then(response => {
+    if (!response.ok) {
+        throw new Error(response.statusText);
     }
-}
+    return response.json();
+}).then(function (data) {
+    if (data.length !== 0) {
+        if (data.length < 5) {
+            lastPosts.push(...data.reverse());
+        } else {
+            lastSeenId = data[data.length - 5].id;
+            lastPosts.push(...data.reverse());
+            lastPostBtn.style.display = "block";
+        }
+        rebuildList(postsEl, lastPosts)
+    }
+}).catch(error => {
+    console.log(error);
+});
 
-const listEl = document.createElement('div');
-rootEl.appendChild(listEl);
-
-
-function rebuildList(item) {
-
+function rebuildList(containerEl, items) {
+    containerEl.innerHTML = '';
+    for (const item of items) {
         const postEl = document.createElement('div');
         postEl.className = 'card mb-2';
         if (item.type === 'regular') {
@@ -151,6 +133,7 @@ function rebuildList(item) {
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
                         <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn">id: ${item.id}</button>
                     </div>
                 `;
         } else if (item.type === 'audio') {
@@ -161,6 +144,7 @@ function rebuildList(item) {
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
                         <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn">id: ${item.id}</button>
                     </div>
                 `;
         } else if (item.type === 'video') {
@@ -171,72 +155,127 @@ function rebuildList(item) {
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
                         <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn">id: ${item.id}</button>
                         </div>
                 `;
-        } else {
-            postEl.innerHTML = `
-                    <div class="card-body">
-                        <div class="card-text">${item.content}</div>
-                        <button class="btn">♡ ${item.likes}</button>
-                        <button class="btn btn-primary" data-action="like">like</button>
-                        <button class="btn btn-danger" data-action="dislike">dislike</button>
-                        <button class="btn btn-danger" data-action="remove">x</button>
-                    </div>
-                `;
+            };
             
-            postEl.querySelector('[data-action=like]').addEventListener('click', () => {
-                fetch(`${baseUrl}/posts/${item.id}/likes`, {
-                    method: 'POST'
-                }).then(
-                    response => {
-                        if (!response.ok) {
-                            throw new Error(response.statusText);
-                        }
-                        return response.json();
-                    },
-                ).then(
-                    data => {
-                        postsEl.querySelector('[data-action=like]').textContent=`like ${data}`;
-                    }               
-                ).catch(error => {
-                    console.log(error);
-                })
-            });
-
-            postEl.querySelector('[data-action=dislike]').addEventListener('click', () => {
-                fetch(`${baseUrl}/posts/${item.id}/likes`, {
-                    method: 'DELETE'
-                }).then(
-                    response => {
-                        if (!response.ok) {
-                            throw new Error(response.statusText);
-                        }
-                        return response.json();
-                    },
-                ).then(
-                    data => {
-                        postsEl.querySelector('[data-action=like]').textContent=`dislike ${data}`;
-                    }               
-                ).catch(error => {
-                    console.log(error);
-                })
-            });
-            postEl.querySelector('[data-action=remove]').addEventListener('click', () => {
+            postEl.querySelector('[data-action=remove]').addEventListener('click', function () {
                 fetch(`${baseUrl}/posts/${item.id}`, {
-                    method: 'DELETE'
-                }).then(
-                    response => {
-                        if (!response.ok) {
-                            throw new Error(response.statusText);
-                        }
-                        return response.json();
-                    },              
-                ).catch(error => {
-                    console.log(error);
-                })
-                postsEl.removeChild(postEl);
+                    method: 'DELETE',
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText);
+                    }
+                    return response.json();
+                }).then(data => {
+                    const index = lastPosts.findIndex((post) => {
+                        return post.id === item.id
+                    })
+                    lastPosts.splice(index, 1)
+                    rebuildList(postsEl, lastPosts);
+                }).catch(error => {
+                    console.log(error)
+                });
             });
-            listEl.appendChild(postEl);
-        };
+    
+            postEl.querySelector('[data-action=like]').addEventListener('click', function () {
+                fetch(`${baseUrl}/posts/${item.id}/likes`, {
+                    method: 'POST',
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText);
+                    }
+                    return response.json();
+                }).then(data => {
+                    const index = lastPosts.findIndex((post) => {
+                        return post.id === item.id
+                    })
+                    lastPosts[index].likes++;
+                    rebuildList(postsEl, lastPosts);
+                }).catch(error => {
+                    console.log(error)
+                });
+            });
+    
+            postEl.querySelector('[data-action=dislike]').addEventListener('click', function () {
+                fetch(`${baseUrl}/posts/${item.id}/likes`, {
+                    method: 'DELETE',
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText);
+                    }
+                    return response.json();
+                }).then(data => {
+                    const index = lastPosts.findIndex((post) => {
+                        return post.id === item.id
+                    })
+                    lastPosts[index].likes--;
+                    rebuildList(postsEl, lastPosts);
+                }).catch(error => {
+                    console.log(error)
+                });
+            });
+            containerEl.appendChild(postEl);
+        }
 };
 
+const lastPostBtn = document.createElement('button');
+lastPostBtn.textContent = 'Загрузить еще';
+lastPostBtn.className = 'card mb-2';
+lastPostBtn.style.display = "none";
+lastPostBtn.addEventListener('click', () => {
+    fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function (data) {
+        if (data.length === 0) {
+            lastPostBtn.style.display = "none";
+        }
+        else {
+            if (data.length < 5) {
+                lastSeenId = data[data.length - 1].id;
+                lastPosts.push(...data.reverse());
+                lastPostBtn.style.display = "none";
+            } else {
+                lastSeenId = data[data.length - 5].id;
+                lastPosts.push(...data.reverse());
+                lastPostBtn.style.display = "block";
+            }
+            rebuildList(postsEl, lastPosts);
+        }
+    }).catch(error => {
+        console.log(error);
+    });
+})
+rootEl.appendChild(lastPostBtn);
+
+setInterval(() => {
+    const promise = fetch(`${baseUrl}/posts/${firstSeenId}`)
+    promise.then(response => {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function (data) {
+        if (data.length === 0) {
+            console.log('Постов нет');
+            newPostBtn.style.display = "none";
+        }
+        else {
+            if (firstSeenId === 0) {
+                firstSeenId = data[data.length - 1].id;
+                newPostBtn.style.display = "none";
+            } else {
+                newPostBtn.style.display = "block";
+            }
+        }
+        console.log(data)
+        console.log('firstSeenId = ' + firstSeenId)
+    }).catch(error => {
+        console.log(error);
+    });
+}, 5000);
