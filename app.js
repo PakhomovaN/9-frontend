@@ -1,4 +1,4 @@
-const baseUrl = 'https://more-posts-9.herokuapp.com';
+const baseUrl = 'https://frontend9.herokuapp.com';
 
 let lastSeenId = 0;
 
@@ -55,25 +55,29 @@ addFormEl.addEventListener('submit', (evt) => {
             throw new Error(response.statusText);
         }
         return response.json();
+    }).then(data => {
+        contentEl.value = '';
+        typeEl.value = 'regular';
+        localStorage.clear();
+        renderPosts(data);
     }).catch(error => {
         console.log(error);
-    });
-
+    });   
 });
 
 const postsEl = document.createElement('div');
 rootEl.appendChild(postsEl);
 
-const lastPosts = document.createElement('button');
-lastPosts.textContent = 'Загрузить еще';
-lastPosts.className = 'card mb-2';
-lastPosts.addEventListener('click', () => {
-    lastPost()
+const lastPostsBtn = document.createElement('button');
+lastPostsBtn.textContent = 'Загрузить еще';
+lastPostsBtn.className = 'card mb-2';
+lastPostsBtn.addEventListener('click', () => {
+    lastPostsBtn()
 });
-rootEl.appendChild(lastPosts);
+rootEl.appendChild(lastPostsBtn);
 
-function lastPost() {
-    fetch(`${baseUrl}/posts/${lastSeenId}`)
+function addlastPosts() {
+    fetch(`${baseUrl}/posts/lastPosts/${lastSeenId}`)
         .then(
             response => {
                 if (!response.ok) {
@@ -81,9 +85,7 @@ function lastPost() {
                 }
                 return response.json();
             }
-        ).then(
-            data => {
-                console.log(data);
+        ).then(data => {
                 renderPosts(data);
             }
         ).catch(error => {
@@ -91,26 +93,50 @@ function lastPost() {
         });
 }
 
-function renderPosts(posts) {
-    for (const post of posts) {
-        const postEl = document.createElement('li');
-        postEl.textContent = post.content;
-        postsEl.appendChild(postEl);
+function renderPosts(data) {
+    if (data.length < 5) {
+        lastPostsBtn.style.display = 'none';
+        if (data.length === 0) {
+            return;
+        }
+    } else {
+        fetch(`${baseUrl}/posts/postId/${data[data.length - 1].id}`)
+        .then(
+            response => {
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+                return response.text();
+            },
+        ).then (
+            data => {
+                console.log(data);
+                if (data === 'true') {
+                    lastPostsBtn.style.display = "block";
+                };
+            }
+        ).catch(error => {
+            console.log(error);
+        })
+    }
+    lastSeenId = data[data.length - 1].id;
+
+    for (const item of data) {
+        postsEl.appendChild(rebuildList(item));
     }
 }
 
 setInterval(() => {
 
-    const promise = fetch(`${baseUrl}/posts/${lastSeenId}`);
-    promise.then(response => {
+    fetch(`${baseUrl}/posts/${lastSeenId}`)
+        .then(response => {
         if (!response.ok) {
             throw new Error(response.statusText);
         }
         return response.json(); 
     }).then(data => {
-        if (data.length !== 0) {
-            lastSeenId = data[data.length - 1].id;
-            renderPosts(data);
+        if (data === 'false') {
+            return;
         }
     }).catch(error => {
         console.log(error);
@@ -118,17 +144,11 @@ setInterval(() => {
 
   }, 5000); 
 
-
 const listEl = document.createElement('div');
 rootEl.appendChild(listEl);
 
-const rebuildList = (evt) => {
-    const items = JSON.parse(evt.currentTarget.responseText);
+function rebuildList(item) {
     listEl.innerHTML = '';
-
-    items.sort((a, b) => {
-        return a.likes - b.likes;
-    });
 
     for (const item of items) {
         const postEl = document.createElement('div');
