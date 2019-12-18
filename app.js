@@ -77,7 +77,7 @@ lastPostsBtn.addEventListener('click', () => {
 rootEl.appendChild(lastPostsBtn);
 
 function addlastPosts() {
-    fetch(`${baseUrl}/posts/lastPosts/${lastSeenId}`)
+    fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
         .then(
             response => {
                 if (!response.ok) {
@@ -100,7 +100,7 @@ function renderPosts(data) {
             return;
         }
     } else {
-        fetch(`${baseUrl}/posts/postId/${data[data.length - 1].id}`)
+        fetch(`${baseUrl}/posts/lastPosts/:lastSeenId/${data[data.length - 1].id}`)
         .then(
             response => {
                 if (!response.ok) {
@@ -125,24 +125,6 @@ function renderPosts(data) {
         postsEl.appendChild(rebuildList(item));
     }
 }
-
-setInterval(() => {
-
-    fetch(`${baseUrl}/posts/${lastSeenId}`)
-        .then(response => {
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
-        return response.json(); 
-    }).then(data => {
-        if (data === 'false') {
-            return;
-        }
-    }).catch(error => {
-        console.log(error);
-    });
-
-  }, 5000); 
 
 const listEl = document.createElement('div');
 rootEl.appendChild(listEl);
@@ -260,3 +242,20 @@ function rebuildList(item) {
         };
     }
 };
+// setInterval(() => {
+
+//     fetch(`${baseUrl}/posts/seenPosts/${lastSeenId}`)
+//         .then(response => {
+//         if (!response.ok) {
+//             throw new Error(response.statusText);
+//         }
+//         return response.json(); 
+//     }).then(data => {
+//         if (data === 'false') {
+//             return;
+//         }
+//     }).catch(error => {
+//         console.log(error);
+//     });
+
+//   }, 5000);
