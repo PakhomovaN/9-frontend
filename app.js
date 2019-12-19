@@ -122,7 +122,7 @@ function rebuildList(containerEl, items) {
                     <button class="btn">♡ ${item.likes}</button>
                     <button class="btn btn-primary" data-action="like">like</button>
                     <button class="btn btn-danger" data-action="dislike">dislike</button>
-                    <button class="btn btn-danger" data-action="remove>x</button> 
+                    <button class="btn btn-danger" data-action="remove">x</button> 
                 </div>
             `;
         } else if (item.type === 'image') {
@@ -132,7 +132,7 @@ function rebuildList(containerEl, items) {
                         <button class="btn">♡ ${item.likes}</button>
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
-                        <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn btn-danger" data-action="remove">x</button>
                         <button class="btn">id: ${item.id}</button>
                     </div>
                 `;
@@ -143,7 +143,7 @@ function rebuildList(containerEl, items) {
                         <button class="btn">♡ ${item.likes}</button>
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
-                        <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn btn-danger" data-action="remove">x</button>
                         <button class="btn">id: ${item.id}</button>
                     </div>
                 `;
@@ -154,7 +154,7 @@ function rebuildList(containerEl, items) {
                         <button class="btn">♡ ${item.likes}</button>
                         <button class="btn btn-primary" data-action="like">like</button>
                         <button class="btn btn-danger" data-action="dislike">dislike</button>
-                        <button class="btn btn-danger" data-action="remove>x</button>
+                        <button class="btn btn-danger" data-action="remove">x</button>
                         <button class="btn">id: ${item.id}</button>
                         </div>
                 `;
